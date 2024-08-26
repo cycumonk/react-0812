@@ -1,14 +1,21 @@
-// src/App.js
 import React from 'react';
-import FormComponent from './FormComponent';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import SignUp from './pages/SignUp';
+import HomePage from './pages/HomePage';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import LoginPage from './pages/LoginPage';
 
-const App = () => {
+
+function App() {
   return (
-    <div>
-      <h1>表單</h1>
-      <FormComponent />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/sign-up" element={<SignUp />} />
+        <Route path="/login" element={<LoginPage />} />
+      </Routes>
+    </Router>
   );
-};
+}
 
 export default App;

@@ -36,9 +36,4 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGet("/api/v1/test", () =>
-{
-    return Results.Json(new { project = "restful api 1.0.0" });
-});
-
 app.Run();

@@ -12,6 +12,14 @@ namespace api.Controllers
             var message = $"前端的文字: {data.Data}";
             return Ok(new { message });
         }
+
+        [HttpGet]
+        public IActionResult GetData()
+        {
+            // 讀取 JSON 文件的內容
+            string jsonString = System.IO.File.ReadAllText("response.json");
+            return Content(jsonString, "application/json");
+        }
     }
 
     public class DataModel
