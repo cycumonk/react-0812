@@ -8,42 +8,70 @@ namespace api.Controllers
     [Route("api/v1/user")]
     public class UserController : ControllerBase
     {
+        private readonly string _dataDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data");
+
+        public UserController()
+        {
+            // 如果目錄不存在則創建
+            if (!Directory.Exists(_dataDirectory))
+            {
+                Directory.CreateDirectory(_dataDirectory);
+            }
+        }
+
         [HttpPost("register")]
         public IActionResult Register([FromBody] UserModel user)
         {
-            // 設定文件路徑，例如：存放在 "Data" 文件夾下
-            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", $"{user.Username}.txt");
+            string filePath = Path.Combine(_dataDirectory, $"{user.Username}.txt");
 
-            // 如果目錄不存在則創建
-            if (!Directory.Exists(Path.Combine(Directory.GetCurrentDirectory(), "Data")))
+            if (System.IO.File.Exists(filePath))
             {
-                Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "Data"));
+                return Conflict(new { message = $"{user.Username} 已經註冊過了!" }); // 409 Conflict
             }
 
-            // 創建或寫入文件
-            System.IO.File.WriteAllText(filePath, $"Username: {user.Username}");
-
-            var message = $"{user.Username} 註冊成功!";
-            return Ok(new { message });
+            try
+            {
+                System.IO.File.WriteAllText(filePath, user.Password);
+                var message = $"{user.Username} 註冊成功!";
+                return Ok(new { message });
+            }
+            catch (IOException ex)
+            {
+                return StatusCode(500, new { message = "註冊過程中發生錯誤。", error = ex.Message });
+            }
         }
 
         [HttpPost("login")]
         public IActionResult Login([FromBody] UserModel user)
         {
             // 設定文件路徑
-            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "Data", $"{user.Username}.txt");
+            string filePath = Path.Combine(_dataDirectory, $"{user.Username}.txt");
 
-            // 檢查文件是否存在
-            if (System.IO.File.Exists(filePath))
+            try
             {
-                // 可以在這裡執行更多的登錄驗證
-                return Ok(new { message = $"{user.Username} 登錄成功!" });
+                // 檢查文件是否存在
+                if (!System.IO.File.Exists(filePath))
+                {
+                    return NotFound(new { message = "無此帳號，請註冊。" });
+                }
+
+                // 讀取文件中的密碼
+                string storedPassword = System.IO.File.ReadAllText(filePath).Trim();
+
+                // 驗證密碼
+                if (storedPassword == user.Password)
+                {
+                    return Ok(new { message = $"{user.Username} 登入成功!" });
+                }
+                else
+                {
+                    return Unauthorized(new { message = "密碼錯誤。" });
+                }
             }
-            else
+            catch
             {
-                return NotFound(new { message = "用戶未找到，請註冊。" });
+                return StatusCode(500, new { message = "登錄過程中發生錯誤。" });
             }
         }
     }
 }
-

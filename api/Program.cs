@@ -5,7 +5,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 添加 CORS 服务
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAllOrigins", builder =>
@@ -16,7 +15,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 添加控制器支持
 builder.Services.AddControllers();
 
 var app = builder.Build();
