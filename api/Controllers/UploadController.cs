@@ -1,35 +1,40 @@
-const express = require('express');
-const multer = require('multer');
-const path = require('path');
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
-const app = express();
-
-// 設置檔案存儲方式和命名規則
-const storage = multer.diskStorage({
-    destination: function(req, file, cb) {
-        cb(null, 'uploads/'); // 指定檔案存儲的目錄
-    },
-    filename: function(req, file, cb) {
-    // 生成檔名，格式為：年月日時分秒毫秒-檔案名
-    const uniqueSuffix = new Date().toISOString().replace(/ [-T:\.Z]/ g, '') +'-' + file.originalname;
-    cb(null, uniqueSuffix);
-}
-});
-
-const upload = multer({ storage: storage });
-
-// API 路由: 處理檔案上傳
-app.post('/api/v1/upload', upload.single('file'), (req, res) =>
+namespace api.Controllers
 {
-if (!req.file)
-{
-    return res.status(400).json({ message: '沒有檔案上傳' });
+    [ApiController]
+    [Route("api/v1/")]
+    public class UploadController : ControllerBase
+    {
+        [HttpPost]
+        [Route("upload")]
+        public async Task<IActionResult> UploadFile(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { message = "請選擇一個檔案" });
+
+            var filePath = Path.Combine("uploads", $"{DateTime.Now:yyyyMMddHHmmssfff}_{file.FileName}");
+
+            try
+            {
+                // 創建目錄如果它不存在
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                return Ok(new { message = "檔案上傳成功！", filePath });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"內部伺服器錯誤: {ex.Message}" });
+            }
+        }
     }
-
-    res.json({ message: '檔案上傳成功', filename: req.file.filename });
-});
-
-app.listen(5001, () =>
-{
-    console.log('伺服器在 http://localhost:5001 啟動');
-});
+}

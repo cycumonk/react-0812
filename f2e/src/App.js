@@ -4,6 +4,7 @@ import SignUp from './pages/SignUp';
 import HomePage from './pages/HomePage';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import LoginPage from './pages/LoginPage';
+import FormComponent from './pages/FormComponent';
 
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/sign-up" element={<SignUp />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/form" element={<FormComponent />} />
       </Routes>
     </Router>
   );
