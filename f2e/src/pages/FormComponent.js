@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
+import DatePicker from 'react-datepicker';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'react-datepicker/dist/react-datepicker.css';
+
 
 const FormComponent = () => {
     const [inputValue, setInputValue] = useState('');
     const [submitResponseMessage, setSubmitResponseMessage] = useState('');
     const [uploadResponseMessage, setUploadResponseMessage] = useState('');
+    const [uploadResponseMessageXHR, setUploadResponseMessageXHR] = useState(''); // 新增用於XHR上傳的回應訊息狀態
     const [fetchData, setFetchData] = useState('');
     const [fetchDataXHR, setFetchDataXHR] = useState('');
     const [selectedFile, setSelectedFile] = useState(null); // 用來存儲使用者選擇的檔案
+    const [selectedDate, setSelectedDate] = useState(null);
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -24,7 +30,6 @@ const FormComponent = () => {
         setSubmitResponseMessage(data.message);
     };
 
-    // 使用 fetch 取得資料
     const handleFetchData = async () => {
         const response = await fetch('http://localhost:5001/api/v1/test', {
             method: 'GET' // 默認方法
@@ -33,7 +38,6 @@ const FormComponent = () => {
         setFetchData(JSON.stringify(data));
     };
 
-    // 使用 XMLHttpRequest 取得資料
     const handleFetchDataXHR = () => {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', 'http://localhost:5001/api/v1/test', true);
@@ -53,43 +57,36 @@ const FormComponent = () => {
         xhr.send();
     };
 
-    // 處理檔案選擇事件
     const handleFileChange = (e) => {
         setSelectedFile(e.target.files[0]); // 將選擇的檔案存入狀態
     };
 
-    // 處理檔案上傳事件
+    // 使用fetch上傳檔案
     const handleFileUpload = async () => {
-        // 檢查是否有選擇檔案
         if (!selectedFile) {
             setUploadResponseMessage("請選擇一個檔案");
             return;
         }
 
-        // 檢查文件類型是否為 .txt 或 .pdf
         const allowedTypes = ['application/pdf', 'text/plain'];
         if (!allowedTypes.includes(selectedFile.type)) {
             setUploadResponseMessage('僅允許上傳 .txt 或 .pdf 檔案');
             return;
         }
 
-        // 建立 FormData 物件，並將檔案附加到其中
         const formData = new FormData();
         formData.append('file', selectedFile);
 
         try {
-            // 發送 POST 請求到後端進行檔案上傳
             const response = await fetch('http://localhost:5001/api/v1/upload', {
                 method: 'POST',
                 body: formData,
             });
 
             if (response.ok) {
-                // 嘗試解析 JSON 格式的回應
                 const result = await response.json();
-
                 if (result && result.message) {
-                    setUploadResponseMessage(result.message); // 顯示成功訊息
+                    setUploadResponseMessage(result.message);
                 } else {
                     setUploadResponseMessage('上傳失敗，未收到預期的回應');
                 }
@@ -97,9 +94,52 @@ const FormComponent = () => {
                 setUploadResponseMessage(`伺服器回應錯誤: ${response.statusText}`);
             }
         } catch (error) {
-            console.error('上傳失敗:', error); // 處理上傳失敗的情況
-            setUploadResponseMessage(`上傳失敗: ${error.message}`); // 顯示錯誤訊息
+            console.error('上傳失敗:', error);
+            setUploadResponseMessage(`上傳失敗: ${error.message}`);
         }
+    };
+
+    // 使用 XMLHttpRequest 上傳檔案
+    const handleFileUploadXHR = () => {
+        if (!selectedFile) {
+            setUploadResponseMessageXHR("請選擇一個檔案");
+            return;
+        }
+
+        const allowedTypes = ['application/pdf', 'text/plain'];
+        if (!allowedTypes.includes(selectedFile.type)) {
+            setUploadResponseMessageXHR('僅允許上傳 .txt 或 .pdf 檔案');
+            return;
+        }
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', 'http://localhost:5001/api/v1/upload', true);
+
+        xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const result = JSON.parse(xhr.responseText);
+                    if (result && result.message) {
+                        setUploadResponseMessageXHR(result.message);
+                    } else {
+                        setUploadResponseMessageXHR('上傳失敗，未收到預期的回應');
+                    }
+                } catch (error) {
+                    setUploadResponseMessageXHR('上傳失敗，無法解析伺服器回應');
+                }
+            } else {
+                setUploadResponseMessageXHR(`伺服器回應錯誤: ${xhr.statusText}`);
+            }
+        };
+
+        xhr.onerror = function () {
+            setUploadResponseMessageXHR('上傳失敗，請檢查網路連線或伺服器狀態');
+        };
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        xhr.send(formData);
     };
 
     return (
@@ -118,7 +158,7 @@ const FormComponent = () => {
                         </div>
                         <button type="submit" className="btn btn-primary">送出</button>
                     </form>
-                    {submitResponseMessage && <p className="alert alert-success">{submitResponseMessage}</p>} {/* 顯示提交的回應訊息 */}
+                    {submitResponseMessage && <p className="alert alert-success">{submitResponseMessage}</p>}
 
                     <button onClick={handleFetchData} className="btn btn-secondary me-2">使用 Fetch 取得資料</button>
                     {fetchData && <p className="mt-2 alert alert-info">{fetchData}</p>}
@@ -126,14 +166,23 @@ const FormComponent = () => {
                     <button onClick={handleFetchDataXHR} className="btn btn-secondary">使用 XMLHttpRequest 取得資料</button>
                     {fetchDataXHR && <p className="mt-2 alert alert-warning">{fetchDataXHR}</p>}
 
-                    {/* 檔案上傳 */}
-                    <div className="mt-4">
-                        {/* 檔案選擇輸入框 */}
+                    <div className="mt-5">
                         <input type="file" className="form-control" accept=".txt, .pdf" onChange={handleFileChange} />
-                        {/* 上傳按鈕 */}
-                        <button className="btn btn-success mt-2" onClick={handleFileUpload}>上傳檔案</button>
+                        <button className="btn btn-success mt-2" onClick={handleFileUpload}>上傳檔案 (Fetch)</button>
+                        <button className="btn btn-info mt-2 ms-2" onClick={handleFileUploadXHR}>上傳檔案 (XHR)</button> {/* 新增的 XHR 上傳按鈕 */}
                     </div>
-                    {uploadResponseMessage && <p className="mt-2 alert alert-info">{uploadResponseMessage}</p>} {/* 顯示上傳的回應訊息 */}
+                    {uploadResponseMessage && <p className="mt-2 alert alert-info">{uploadResponseMessage}</p>}
+                    {uploadResponseMessageXHR && <p className="mt-2 alert alert-warning">{uploadResponseMessageXHR}</p>} {/* 顯示 XHR 上傳的回應訊息 */}
+                    <div className="mt-5">
+                        <h2>選擇日期</h2>
+                        <DatePicker
+                            selected={selectedDate}
+                            onChange={(date) => setSelectedDate(date)}
+                            dateFormat="yyyy/MM/dd"
+                            placeholderText="請選擇日期"
+                        />
+                        {selectedDate && <p>你選擇的日期是: {selectedDate.toDateString()}</p>}
+                    </div>
                 </div>
             </div>
         </div>
