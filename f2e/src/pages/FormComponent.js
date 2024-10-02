@@ -65,14 +65,12 @@ const FormComponent = () => {
     // 使用fetch上傳檔案
     const handleFileUpload = async () => {
         if (!selectedFile) {
-            setUploadResponseMessage("請選擇一個檔案");
-            return;
+            return setUploadResponseMessage("請選擇一個檔案");
         }
 
         const allowedTypes = ['application/pdf', 'text/plain'];
         if (!allowedTypes.includes(selectedFile.type)) {
-            setUploadResponseMessage('僅允許上傳 .txt 或 .pdf 檔案');
-            return;
+            return setUploadResponseMessage('僅允許上傳 .txt 或 .pdf 檔案');
         }
 
         const formData = new FormData();
@@ -84,21 +82,24 @@ const FormComponent = () => {
                 body: formData,
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                if (result && result.message) {
-                    setUploadResponseMessage(result.message);
-                } else {
-                    setUploadResponseMessage('上傳失敗，未收到預期的回應');
-                }
-            } else {
-                setUploadResponseMessage(`伺服器回應錯誤: ${response.statusText}`);
-            }
+            const result = await handleResponse(response);
+            setUploadResponseMessage(result);
         } catch (error) {
             console.error('上傳失敗:', error);
             setUploadResponseMessage(`上傳失敗: ${error.message}`);
         }
     };
+
+    const handleResponse = async (response) => {
+        if (response.ok) {
+            const result = await response.json();
+            return result && result.message
+                ? result.message
+                : '上傳失敗，未收到預期的回應';
+        }
+        return `伺服器回應錯誤: ${response.statusText}`;
+    };
+
 
     // 使用 XMLHttpRequest 上傳檔案
     const handleFileUploadXHR = () => {
