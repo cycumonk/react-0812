@@ -103,46 +103,64 @@ const FormComponent = () => {
 
     // 使用 XMLHttpRequest 上傳檔案
     const handleFileUploadXHR = () => {
-        if (!selectedFile) {
-            setUploadResponseMessageXHR("請選擇一個檔案");
-            return;
-        }
-
-        const allowedTypes = ['application/pdf', 'text/plain'];
-        if (!allowedTypes.includes(selectedFile.type)) {
-            setUploadResponseMessageXHR('僅允許上傳 .txt 或 .pdf 檔案');
-            return;
-        }
+        if (!validateFile(selectedFile)) return;
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', 'http://localhost:5001/api/v1/upload', true);
 
-        xhr.onload = function () {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                    const result = JSON.parse(xhr.responseText);
-                    if (result && result.message) {
-                        setUploadResponseMessageXHR(result.message);
-                    } else {
-                        setUploadResponseMessageXHR('上傳失敗，未收到預期的回應');
-                    }
-                } catch (error) {
-                    setUploadResponseMessageXHR('上傳失敗，無法解析伺服器回應');
-                }
-            } else {
-                setUploadResponseMessageXHR(`伺服器回應錯誤: ${xhr.statusText}`);
-            }
-        };
-
-        xhr.onerror = function () {
-            setUploadResponseMessageXHR('上傳失敗，請檢查網路連線或伺服器狀態');
-        };
+        xhr.onload = handleXhrLoad;
+        xhr.onerror = handleXhrError;
 
         const formData = new FormData();
         formData.append('file', selectedFile);
 
         xhr.send(formData);
     };
+
+    // 驗證檔案的有效性
+    const validateFile = (file) => {
+        if (!file) {
+            setUploadResponseMessageXHR("請選擇一個檔案");
+            return false;
+        }
+
+        const allowedTypes = ['application/pdf', 'text/plain'];
+        if (!allowedTypes.includes(file.type)) {
+            setUploadResponseMessageXHR('僅允許上傳 .txt 或 .pdf 檔案');
+            return false;
+        }
+
+        return true;
+    };
+
+    // 處理 XHR 載入完成
+    const handleXhrLoad = function () {
+        if (this.status >= 200 && this.status < 300) {
+            processResponse(this.responseText);
+        } else {
+            setUploadResponseMessageXHR(`伺服器回應錯誤: ${this.statusText}`);
+        }
+    };
+
+    // 處理伺服器回應
+    const processResponse = (responseText) => {
+        try {
+            const result = JSON.parse(responseText);
+            if (result && result.message) {
+                setUploadResponseMessageXHR(result.message);
+            } else {
+                setUploadResponseMessageXHR('上傳失敗，未收到預期的回應');
+            }
+        } catch (error) {
+            setUploadResponseMessageXHR('上傳失敗，無法解析伺服器回應');
+        }
+    };
+
+    // 處理 XHR 錯誤
+    const handleXhrError = () => {
+        setUploadResponseMessageXHR('上傳失敗，請檢查網路連線或伺服器狀態');
+    };
+
 
     return (
         <div className="container mt-5">
