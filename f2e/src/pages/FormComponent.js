@@ -13,6 +13,7 @@ const FormComponent = () => {
     const [fetchDataXHR, setFetchDataXHR] = useState('');
     const [selectedFile, setSelectedFile] = useState(null); // 用來存儲使用者選擇的檔案
     const [selectedDate, setSelectedDate] = useState(null);
+    const [selectedYearMonth, setSelectedYearMonth] = useState(null);
 
 
     const handleSubmit = async (e) => {
@@ -183,6 +184,18 @@ const FormComponent = () => {
                         />
                         {selectedDate && <p>你選擇的日期是: {selectedDate.toDateString()}</p>}
                     </div>
+                    <div className="mt-5">
+                        <h2>選擇年月</h2>
+                        <DatePicker
+                            selected={selectedYearMonth}
+                            onChange={(date) => setSelectedYearMonth(date)}
+                            dateFormat="yyyy/MM"
+                            placeholderText="請選擇年份和月份"
+                            showMonthYearPicker
+                        />
+                        {selectedYearMonth && <p>你選擇的日期是: {selectedYearMonth.toDateString()}</p>}
+                    </div>
+
                 </div>
             </div>
         </div>
