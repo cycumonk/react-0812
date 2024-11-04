@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using NLog;
 
 namespace api.Controllers
 {
@@ -6,10 +7,13 @@ namespace api.Controllers
     [Route("api/v1/test")]
     public class FormController : ControllerBase
     {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
         [HttpPost]
         public IActionResult PostData([FromBody] DataModel data)
         {
             var message = $"前端的文字: {data.Data}";
+            logger.Info("API /api/v1/test was called at {0}", DateTime.Now);
             return Ok(new { message });
         }
 

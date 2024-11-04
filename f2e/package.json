@@ -40,5 +40,23 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "NLog": {
+    "autoReload": true,
+    "throwConfigExceptions": true,
+    "targets": {
+      "logfile": {
+        "type": "File",
+        "fileName": "logs/log-${shortdate}.txt",
+        "layout": "${longdate} ${level:uppercase=true} ${message} ${exception}"
+      }
+    },
+    "rules": [
+      {
+        "logger": "*",
+        "minLevel": "Info",
+        "writeTo": "logfile, console"
+      }
+    ]
   }
 }
