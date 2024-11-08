@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using NLog;
+using NLog.Web;
 
 namespace api.Controllers
 {
@@ -13,8 +14,11 @@ namespace api.Controllers
         public IActionResult PostData([FromBody] DataModel data)
         {
             var message = $"前端的文字: {data.Data}";
-            logger.Info("API /api/v1/test was called at {0}", DateTime.Now);
-            return Ok(new { message });
+            logger.Info(message);
+            return Ok(new
+            {
+                message
+            });
         }
 
         [HttpGet]
@@ -22,6 +26,7 @@ namespace api.Controllers
         {
             // 讀取 JSON 文件的內容
             string jsonString = System.IO.File.ReadAllText("response.json");
+            logger.Info(jsonString);
             return Content(jsonString, "application/json");
         }
     }

@@ -1,7 +1,20 @@
 using NLog;
 using NLog.Web;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using NLog.Extensions.Logging;
 
-var logger = NLog.LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
+
+var config = new ConfigurationBuilder()
+    .SetBasePath(AppContext.BaseDirectory) // 確保在不同平台上取得正確的路徑
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .Build();
+
+var logger = LogManager.Setup()
+    .SetupExtensions(s => s.RegisterConfigSettings(config))
+    .LoadConfigurationFromSection(config)
+    .GetCurrentClassLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,11 +36,6 @@ builder.Services.AddCors(options =>
 // 加入控制器服務
 builder.Services.AddControllers();
 
-// 使用 NLog 作為 logging 服務
-builder.Logging.ClearProviders();
-builder.Logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
-builder.Host.UseNLog();
-
 var app = builder.Build();
 
 // Middlewares
@@ -47,5 +55,55 @@ app.MapControllers();
 
 app.Run();
 
-// 確保應用程式關閉時 NLog 的資源被正確釋放
-NLog.LogManager.Shutdown();
+
+try
+{
+    using var servicesProvider = new ServiceCollection()
+        .AddTransient<Runner>() // Runner is the custom class
+        .AddLogging(loggingBuilder =>
+        {
+            // configure Logging with NLog
+            loggingBuilder.ClearProviders();
+            loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
+            loggingBuilder.AddNLog(config);
+        }).BuildServiceProvider();
+
+    // 確保NLog的初始化成功
+    logger.Debug("Starting application");
+
+    var runner = servicesProvider.GetRequiredService<Runner>();
+    runner.DoAction("Action1");
+
+    Console.WriteLine("Press ANY key to exit");
+    Console.ReadKey();
+}
+catch (Exception ex)
+{
+    // NLog: catch any exception and log it.
+    logger.Error(ex, "Stopped program because of exception");
+    throw;
+}
+finally
+{
+    // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
+    LogManager.Shutdown();
+}
+
+public class Runner
+{
+    private readonly ILogger<Runner> _logger;
+
+    public Runner(ILogger<Runner> logger)
+    {
+        _logger = logger;
+    }
+
+    public void DoAction(string name)
+    {
+        _logger.LogDebug("Doing hard work! {Action}", name);
+        _logger.LogInformation("Doing hard work! {Action}", name);
+        _logger.LogWarning("Doing hard work! {Action}", name);
+        _logger.LogError("Doing hard work! {Action}", name);
+        _logger.LogCritical("Doing hard work! {Action}", name);
+    }
+}
