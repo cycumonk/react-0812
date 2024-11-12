@@ -25,9 +25,9 @@ builder.Services.AddSwaggerGen();
 // CORS 設定
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAllOrigins", policyBuilder =>
+    options.AddPolicy("AllowAllOrigins", builder =>
     {
-        policyBuilder.AllowAnyOrigin()
+        builder.AllowAnyOrigin()
                      .AllowAnyMethod()
                      .AllowAnyHeader();
     });
