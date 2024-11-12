@@ -54,3 +54,6 @@ app.UseHttpsRedirection();
 app.MapControllers();
 
 app.Run();
+
+//釋放Nlog使用的資源 確保應用程式正常退出 有些日誌訊息會放在記憶體緩衝區，如果沒有正確關閉Nlog會導致資料還在緩衝區來不及寫入就被關閉，導致日誌沒寫入
+LogManager.Shutdown();
