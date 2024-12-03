@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using System.IO; // 引入 System.IO 命名空間以使用文件操作
 using api.Models;
+using Microsoft.EntityFrameworkCore;
+using BCrypt.Net;
 
 namespace api.Controllers
 {
@@ -8,70 +9,55 @@ namespace api.Controllers
     [Route("api/v1/user")]
     public class UserController : ControllerBase
     {
-        private readonly string _dataDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data");
+        private readonly AppDbContext _context;
 
-        public UserController()
+        public UserController(AppDbContext context)
         {
-            // 如果目錄不存在則創建
-            if (!Directory.Exists(_dataDirectory))
-            {
-                Directory.CreateDirectory(_dataDirectory);
-            }
+            _context = context;
         }
 
         [HttpPost("register")]
-        public IActionResult Register([FromBody] UserModel user)
+        public IActionResult Register([FromBody] RegisterRequestModel request)
         {
-            string filePath = Path.Combine(_dataDirectory, $"{user.Username}.txt");
-
-            if (System.IO.File.Exists(filePath))
+            if (_context.Users.Any(u => u.Username == request.Username))
             {
-                return Conflict(new { message = $"{user.Username} 已經註冊過了!" }); // 409 Conflict
+                return Conflict(new { message = $"{request.Username} 已經註冊過了!" }); // 409 Conflict
             }
 
             try
             {
-                System.IO.File.WriteAllText(filePath, user.Password);
-                var message = $"{user.Username} 註冊成功!";
-                return Ok(new { message });
+                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+                var newUser = new UserModel
+                {
+                    Username = request.Username,
+                    PasswordHash = hashedPassword
+                };
+
+                _context.Users.Add(newUser);
+                _context.SaveChanges();
+
+                return Ok(new { message = $"{request.Username} 註冊成功!" });
             }
-            catch (IOException ex)
+            catch (Exception ex)
             {
                 return StatusCode(500, new { message = "註冊過程中發生錯誤。", error = ex.Message });
             }
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] UserModel user)
+        public IActionResult Login([FromBody] LoginRequestModel request)
         {
-            // 設定文件路徑
-            string filePath = Path.Combine(_dataDirectory, $"{user.Username}.txt");
+            var existingUser = _context.Users.FirstOrDefault(u => u.Username == request.Username);
 
-            try
+            if (existingUser == null || !BCrypt.Net.BCrypt.Verify(request.Password, existingUser.PasswordHash))
             {
-                // 檢查文件是否存在
-                if (!System.IO.File.Exists(filePath))
-                {
-                    return NotFound(new { message = "無此帳號，請註冊。" });
-                }
-
-                // 讀取文件中的密碼
-                string storedPassword = System.IO.File.ReadAllText(filePath).Trim();
-
-                // 驗證密碼
-                if (storedPassword == user.Password)
-                {
-                    return Ok(new { message = $"{user.Username} 登入成功!" });
-                }
-                else
-                {
-                    return Unauthorized(new { message = "密碼錯誤。" });
-                }
+                return Unauthorized(new { message = "帳號或密碼錯誤。" });
             }
-            catch
-            {
-                return StatusCode(500, new { message = "登錄過程中發生錯誤。" });
-            }
+
+            return Ok(new { message = $"{existingUser.Username} 登入成功!" });
         }
+
+
     }
 }

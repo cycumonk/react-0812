@@ -1,3 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using api.Models;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
+    new MySqlServerVersion(new Version(8, 0, 40)))  // 根據 MySQL 的版本調整
+);
+
 using NLog;
 using NLog.Web;
 using Microsoft.Extensions.Configuration;
