@@ -24,11 +24,11 @@ const FormComponent = () => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ data: inputValue }),
-        });
-
-        const data = await response.json();
-        setSubmitResponseMessage(data.message);
+            body: JSON.stringify({ Data: inputValue }),
+        })
+        const Data = await response.json();
+        console.log('Response:', Data);
+        setSubmitResponseMessage(Data.message);
     };
 
     const handleFetchData = async () => {
