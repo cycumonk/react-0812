@@ -2,3 +2,4 @@ obj/
 bin/
 Data/
 logs/
+appsettings.json
