@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-datepicker/dist/react-datepicker.css';
 
-
-const FormComponent = () => {
+function FormComponent() {
     const [inputValue, setInputValue] = useState('');
     const [submitResponseMessage, setSubmitResponseMessage] = useState('');
     const [uploadResponseMessage, setUploadResponseMessage] = useState('');
@@ -14,6 +13,23 @@ const FormComponent = () => {
     const [selectedFile, setSelectedFile] = useState(null); // 用來存儲使用者選擇的檔案
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedYearMonth, setSelectedYearMonth] = useState(null);
+    const [username, setUsername] = useState(null);
+
+    useEffect(() => {
+        const storedUsername = localStorage.getItem("username");
+        if (storedUsername) {
+            setUsername(storedUsername);
+        }
+    }, []);
+
+
+    useEffect(() => {
+        // 嘗試從 localStorage 中獲取已登入的用戶名
+        const storedUsername = localStorage.getItem("username");
+        if (storedUsername) {
+            setUsername(storedUsername);
+        }
+    }, []);
 
 
     const handleSubmit = async (e) => {
@@ -164,7 +180,16 @@ const FormComponent = () => {
 
     return (
         <div className="container mt-5">
-            <div className="card">
+            <div className="text-center mb-4">
+                {username ? (
+                    <p>Welcome, {username}!</p>
+                ) : (
+                    <p>
+                        尚未登入，請先 <a href="/login">登入</a> 或 <a href="/register">註冊</a>
+                    </p>
+                )}
+            </div>
+            {username && (<div className="card">
                 <div className="card-body">
                     <form onSubmit={handleSubmit} className="mb-3">
                         <div className="mb-3">
@@ -216,7 +241,8 @@ const FormComponent = () => {
                     </div>
 
                 </div>
-            </div>
+            </div>)}
+
         </div>
     );
 };

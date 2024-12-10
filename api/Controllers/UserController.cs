@@ -2,6 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using api.Models;
 using Microsoft.EntityFrameworkCore;
 using BCrypt.Net;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.Extensions.Configuration;
+
 
 namespace api.Controllers
 {
@@ -10,10 +16,13 @@ namespace api.Controllers
     public class UserController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public UserController(AppDbContext context)
+
+        public UserController(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         [HttpPost("register")]
@@ -55,7 +64,31 @@ namespace api.Controllers
                 return Unauthorized(new { message = "帳號或密碼錯誤。" });
             }
 
-            return Ok(new { message = $"{existingUser.Username} 登入成功!" });
+            // JWT 設定
+            var jwtSettings = _configuration.GetSection("JwtSettings");
+            var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.Name, existingUser.Username),
+                    new Claim("UserId", existingUser.Id.ToString()), // Custom Claim
+                }),
+                Expires = DateTime.UtcNow.AddHours(2),
+                Issuer = jwtSettings["Issuer"],
+                Audience = jwtSettings["Audience"],
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            return Ok(new
+            {
+                message = $"{existingUser.Username} 登入成功!",
+                token = tokenHandler.WriteToken(token)
+            });
         }
 
 
