@@ -182,13 +182,18 @@ function FormComponent() {
         <div className="container mt-5">
             <div className="text-center mb-4">
                 {username ? (
-                    <p>Welcome, {username}!</p>
+                    <p className="fs-4 fw-bold text-success">Welcome, {username}!</p>
                 ) : (
-                    <p>
-                        尚未登入，請先 <a href="/login">登入</a> 或 <a href="/register">註冊</a>
-                    </p>
+                    <div>
+                        <p className="fs-5 text-danger">尚未登入，請先登入或註冊</p>
+                        <div className="d-flex justify-content-center gap-3">
+                            <a href="/login" className="btn btn-primary">登入</a>
+                            <a href="/sign-up" className="btn btn-outline-secondary">註冊</a>
+                        </div>
+                    </div>
                 )}
             </div>
+
             {username && (<div className="card">
                 <div className="card-body">
                     <form onSubmit={handleSubmit} className="mb-3">
